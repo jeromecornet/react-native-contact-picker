@@ -31,5 +31,6 @@ repositories {
 }
 
 dependencies {
-  compile 'com.facebook.react:react-native:0.36.+'
+  compile 'com.facebook.react:react-native:0.39.+'
+  compile 'com.codinguser.android:contactpicker:3.0.0@aar'
 }

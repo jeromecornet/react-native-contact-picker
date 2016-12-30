@@ -58,10 +58,10 @@ RCT_REMAP_METHOD(pickContact,resolver:(RCTPromiseResolveBlock)resolve
 }
 - (void)peoplePickerNavigationController:(ABPeoplePickerNavigationController *)peoplePicker
                          didSelectPerson:(ABRecordRef)person {
-    ABMutableMultiValueRef emailProperty  = ABRecordCopyValue(person, kABPersonEmailProperty);
-    NSArray *emails = (__bridge_transfer NSArray *)ABMultiValueCopyArrayOfAllValues(emailProperty);
+    ABMutableMultiValueRef phoneProperty  = ABRecordCopyValue(person, kABPersonPhoneProperty);
+    NSArray *phones = (__bridge_transfer NSArray *)ABMultiValueCopyArrayOfAllValues(phoneProperty);
     [self.root dismissViewControllerAnimated:YES completion:nil];
-    self.resolve(emails);
+    self.resolve(phones);
 }
 
 @end

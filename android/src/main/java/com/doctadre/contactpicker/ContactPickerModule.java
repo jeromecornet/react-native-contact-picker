@@ -16,84 +16,69 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
 
+
 import static android.app.Activity.RESULT_OK;
+import static android.app.Activity.RESULT_CANCELED;
+
+import com.codinguser.android.contactpicker.ContactsPickerActivity;
 
 
 class ContactPickerModule extends ReactContextBaseJavaModule {
-    private static final int CONTACT_PICKER_RESULT = 1001;
-    private static final String DEBUG_TAG = "ContactPicker";
+  private static final int GET_PHONE_NUMBER = 3007;
+  private static final String DEBUG_TAG = "ContactPicker";
 
-    private Promise mContactPickerPromise;
-    private final ReactApplicationContext _reactContext;
+  private Promise mContactPickerPromise;
+  private final ReactApplicationContext _reactContext;
 
 
+  @Override
+  public String getName() {
+    return "ContactPicker";
+  }
+
+  ContactPickerModule(ReactApplicationContext reactContext) {
+    super(reactContext);
+    _reactContext = reactContext;
+    _reactContext.addActivityEventListener(mActivityEventListener);
+  }
+
+  @ReactMethod
+  public void pickContact(final Promise promise) {
+    mContactPickerPromise = promise;
+    ///startActivityForResult(new Intent(this, ContactsPickerActivity.class), GET_PHONE_NUMBER);
+    Activity currentActivity = getCurrentActivity();
+    Intent contactPickerIntent = new Intent(_reactContext, ContactsPickerActivity.class);
+    currentActivity.startActivityForResult(contactPickerIntent, GET_PHONE_NUMBER);
+  }
+
+  // Listen for results.
+  private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
     @Override
-    public String getName() {
-        return "ContactPicker";
-    }
-
-    ContactPickerModule(ReactApplicationContext reactContext) {
-        super(reactContext);
-        _reactContext = reactContext;
-        _reactContext.addActivityEventListener(mActivityEventListener);
-    }
-
-
-    @ReactMethod
-    public void pickContact(final Promise promise) {
-        Activity currentActivity = getCurrentActivity();
-        Intent contactPickerIntent = new Intent(Intent.ACTION_PICK,
-                Contacts.CONTENT_URI);
-        mContactPickerPromise = promise;
-        currentActivity.startActivityForResult(contactPickerIntent, CONTACT_PICKER_RESULT);
-
-    }
-
-    private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
-        @Override
-        public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-            if (requestCode == ContactPickerModule.CONTACT_PICKER_RESULT) {
-                WritableArray emails = Arguments.createArray();
-                try {
-                    if (resultCode == RESULT_OK) {
-                        switch (requestCode) {
-                            case CONTACT_PICKER_RESULT:
-                                Uri result = data.getData();
-                                String id = result.getLastPathSegment();
-                                Cursor cursor = _reactContext.getContentResolver().query(
-                                        Email.CONTENT_URI, null,
-                                        Email.CONTACT_ID + "=?",
-                                        new String[]{id}, null);
-                                try {
-                                    while (cursor.moveToNext()) {
-                                        int emailIdx = cursor.getColumnIndex(Email.DATA);
-                                        String email = cursor.getString(emailIdx);
-                                        emails.pushString(email);
-                                    }
-                                } finally {
-                                    cursor.close();
-                                }
-                                mContactPickerPromise.resolve(emails);
-                                break;
-                        }
-
-                    } else {
-                        // gracefully handle failure
-                        mContactPickerPromise.reject(Integer.toString(resultCode), "The user cancelled or there was no contact");
-                    }
-                } catch (Exception e) {
-                    mContactPickerPromise.reject(Integer.toString(resultCode), e.getMessage(), e);
-                }
-            }
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+      switch (requestCode) {
+        case GET_PHONE_NUMBER:
+        // This is the standard resultCode that is sent back if the
+        // activity crashed or didn't doesn't supply an explicit result.
+        if (resultCode == RESULT_CANCELED){
+          mContactPickerPromise.resolve("");
         }
-    };
-
-    /**
-     * Need this so we don't get "need to implement onNewIntent" crash
-     * Got the solution from https://github.com/marcshilling/react-native-image-picker/commit/146cf6ee56b9e0953e9136e1491e893b41edb672
-     */
-    @SuppressWarnings("unused")
-    public void onNewIntent(Intent intent) {
-        // no-op
+        else {
+          String phoneNumber = (String) data.getExtras().get(ContactsPickerActivity.KEY_PHONE_NUMBER);
+          mContactPickerPromise.resolve(phoneNumber);
+          break;
+        }
+        default:
+        break;
+      }
     }
+  };
+
+  /**
+  * Need this so we don't get "need to implement onNewIntent" crash
+  * Got the solution from https://github.com/marcshilling/react-native-image-picker/commit/146cf6ee56b9e0953e9136e1491e893b41edb672
+  */
+  @SuppressWarnings("unused")
+  public void onNewIntent(Intent intent) {
+    // no-op
+  }
 }
